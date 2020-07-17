@@ -1,70 +1,63 @@
-# lnmp
-version: '3'
-
+version: "3.7"
 services:
-  mysql:
-    image: mysql:5.7
-    container_name: mysql
-    hostname: mysql
-    ports:
-    - "3306:3306"
-    volumes:
-    - ./mysql/data:/var/lib/mysql
-    - ./mysql/conf:/etc/mysql/conf.d
-    - ./mysql/logs:/logs
-    environment:
-    - MYSQL_ROOT_PASSWORD=root
-    command: --default-authentication-plugin=mysql_native_password #支持远程访问
-    networks:
-    - lnmp
-
-  redis:
-    image: redis:4
-    container_name: redis
-    hostname: redis
-    volumes:
-    - ./redis/data:/data
-    - ./redis/conf/redis.conf:/usr/local/etc/redis/redis.conf
-    ports:
-    - "6379:6379"
-    networks:
-    - lnmp
-
-  php:
-    build: ./phpfpm
-    container_name: php
-    hostname: php
-    ports:
-      - "9000:9000"
-    links:
-      - mysql:mysql
-      - redis:redis
-    volumes:
-      - /Users/chenyinshan/code:/www
-      - ./phpfpm/conf/php.ini:/usr/local/etc/php/php.ini:ro
-      - ./phpfpm/conf/php-fpm.conf:/usr/local/etc/php-fpm.conf
-      - ./phpfpm/conf/www.conf:/usr/local/etc/php-fpm.d/www.conf
-      - ./composer:/data
-    networks:
-      - lnmp
-
   nginx:
-    image: nginx:latest
+    image: nginx:alpine
     container_name: nginx
     hostname: nginx
+    restart: always
     ports:
-    - "80:80"
+      - 80:80
+    privileged: true
     volumes:
-    - /Users/chenyinshan/code:/www
-    - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-    - ./nginx/conf.d/:/etc/nginx/conf.d/:ro
-    links:
-    - php:PHP-FPM
+      - ./config/nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./config/nginx/conf.d:/etc/nginx/conf.d
+      - ./logs/nginx:/var/log/nginx
+      - ./www:/var/www/localhost
     networks:
-    - lnmp
+      - app_net
+
+  redis:
+    image: redis:alpine
+    container_name: redis
+    hostname: redis
+    restart: always
+    ports:
+      - 6379:6379
+    volumes:
+      - ./config/redis/redis.conf:/usr/local/etc/redis/redis.conf
+      - ./redis:/data
+    networks:
+      - app_net
+
+  mariadb:
+    image: mariadb:latest
+    container_name: mariadb
+    hostname: mariadb
+    restart: always
+    ports:
+      - 3306:3306
+    volumes:
+      - ./config/mysql:/etc/mysql/conf.d
+      - ./config/mysql/mysql.cnf:/etc/mysql/conf.d/mysql.cnf
+      - ./mysql:/var/lib/mysql
+      - ./logs/mysql:/var/log/mysql
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      - MYSQL_ROOT_PASSWORD=toYkXrB3ekejI5Rb
+    networks:
+      - app_net
+
+  memcache:
+    image: memcached:alpine
+    hostname: memcache
+    container_name: memcache
+    restart: always
+    ports:
+      - 11211:11211
+    networks:
+      - app_net
 
 networks:
-  lnmp:
-    driver: bridge
-
-  
+  app_net:
+    external:
+      name: app_net
