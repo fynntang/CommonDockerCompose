@@ -1,6 +1,6 @@
-# way
+# why
 
-1. 创建`networks`
+第一步需要创建`networks`
 ```bash
 docker network create app_net
 ```
